@@ -11,6 +11,7 @@ import (
 // Repository lê o cadastro completo na view dbo.devops_servidor.
 type Repository interface {
 	Buscar(ctx context.Context, filtro Filtro) ([]Servidor, error)
+	Listar(ctx context.Context, ativo string) ([]Servidor, error)
 }
 
 type SQLRepository struct {
@@ -51,10 +52,23 @@ func (r *SQLRepository) Buscar(ctx context.Context, filtro Filtro) ([]Servidor, 
 			`nome COLLATE Latin1_General_CI_AI LIKE @p%d ESCAPE '\'`, len(args)))
 	}
 
-	query := `SELECT ` + colunasServidor + `
-		FROM dbo.devops_servidor
-		WHERE ` + strings.Join(conds, " AND ") + `
-		ORDER BY nome, matricula`
+	return r.consultar(ctx, conds, args)
+}
+
+// Listar devolve todos os servidores. ativo vazio não filtra; SIM e NAO restringem a coluna ativo.
+func (r *SQLRepository) Listar(ctx context.Context, ativo string) ([]Servidor, error) {
+	if ativo == "" {
+		return r.consultar(ctx, nil, nil)
+	}
+	return r.consultar(ctx, []string{`ativo = @p1`}, []any{ativo})
+}
+
+func (r *SQLRepository) consultar(ctx context.Context, conds []string, args []any) ([]Servidor, error) {
+	query := `SELECT ` + colunasServidor + ` FROM dbo.devops_servidor`
+	if len(conds) > 0 {
+		query += ` WHERE ` + strings.Join(conds, " AND ")
+	}
+	query += ` ORDER BY nome, matricula`
 
 	rows, err := r.db.QueryContext(ctx, query, args...)
 	if err != nil {

@@ -24,6 +24,12 @@ func (f *fakeRepo) Buscar(_ context.Context, filtro Filtro) ([]Servidor, error) 
 	return f.rows, f.err
 }
 
+func (f *fakeRepo) Listar(_ context.Context, ativo string) ([]Servidor, error) {
+	f.called = true
+	f.filtro.Ativo = ativo
+	return f.rows, f.err
+}
+
 func chamar(t *testing.T, repo *fakeRepo, path string) (*http.Response, []byte) {
 	t.Helper()
 	app := fiber.New()
@@ -84,6 +90,35 @@ func TestDetalheNaoEncontrado(t *testing.T) {
 	resp, _ := chamar(t, repo, "/api/servidores/detalhe?nome=inexistente")
 	if resp.StatusCode != http.StatusNotFound {
 		t.Fatalf("status %d", resp.StatusCode)
+	}
+}
+
+func TestListarPorAtivo(t *testing.T) {
+	repo := &fakeRepo{rows: []Servidor{{CGM: 1, Ativo: "SIM"}, {CGM: 2, Ativo: "SIM"}}}
+	resp, body := chamar(t, repo, "/api/servidores?ativo=sim")
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("status %d, corpo %s", resp.StatusCode, body)
+	}
+	if repo.filtro.Ativo != "SIM" {
+		t.Fatalf("ativo recebido %q", repo.filtro.Ativo)
+	}
+	var resultado Resultado
+	if err := json.Unmarshal(body, &resultado); err != nil {
+		t.Fatal(err)
+	}
+	if resultado.Total != 2 {
+		t.Fatalf("total %d", resultado.Total)
+	}
+}
+
+func TestListarAtivoInvalido(t *testing.T) {
+	repo := &fakeRepo{}
+	resp, _ := chamar(t, repo, "/api/servidores?ativo=talvez")
+	if resp.StatusCode != http.StatusBadRequest {
+		t.Fatalf("status %d", resp.StatusCode)
+	}
+	if repo.called {
+		t.Fatal("repositório não deveria ser chamado")
 	}
 }
 

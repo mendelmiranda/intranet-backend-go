@@ -112,6 +112,9 @@ Consulta o cadastro completo da view `dbo.devops_servidor` (SQL Server da folha,
 | GET | `/api/servidores/detalhe?nome={nome}` | detalhe por trecho do nome, sem acento |
 | GET | `/api/servidores/detalhe?matricula={matricula}` | detalhe pela matrícula |
 | GET | `/api/servidores/detalhe?q={termo}` | o termo é CPF (11 dígitos), matrícula (número) ou nome |
+| GET | `/api/servidores` | lista geral, com o cadastro completo |
+| GET | `/api/servidores?ativo=SIM` | somente servidores ativos |
+| GET | `/api/servidores?ativo=NAO` | somente servidores inativos |
 
 `cpf`, `nome` e `matricula` podem ser combinados. A resposta traz `total` e `servidores` com todas as colunas da view. Sem resultado, a API responde 404.
 

@@ -74,6 +74,7 @@ type Filtro struct {
 	CPF       string
 	Nome      string
 	Matricula *int
+	Ativo     string
 }
 
 func (f Filtro) vazio() bool {

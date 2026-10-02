@@ -24,6 +24,40 @@ func NewHandler(repo Repository) *Handler {
 
 func (h *Handler) Register(app *fiber.App) {
 	app.Get("/api/servidores/detalhe", h.detalhe)
+	app.Get("/api/servidores", h.listar)
+}
+
+func (h *Handler) listar(c fiber.Ctx) error {
+	ativo, err := interpretarAtivo(c.Query("ativo"))
+	if err != nil {
+		return erro(c, http.StatusBadRequest, err.Error())
+	}
+
+	ctx, cancel := context.WithTimeout(c.Context(), requestTimeout)
+	defer cancel()
+
+	servidores, err := h.repo.Listar(ctx, ativo)
+	if err != nil {
+		log.Printf("listagem de servidores: %v", err)
+		return erro(c, http.StatusInternalServerError, "Erro ao listar os servidores")
+	}
+	if servidores == nil {
+		servidores = []Servidor{}
+	}
+	return c.JSON(Resultado{Total: len(servidores), Servidores: servidores})
+}
+
+func interpretarAtivo(value string) (string, error) {
+	switch strings.ToUpper(strings.TrimSpace(value)) {
+	case "":
+		return "", nil
+	case "SIM":
+		return "SIM", nil
+	case "NAO", "NÃO":
+		return "NAO", nil
+	default:
+		return "", errConsulta("ativo deve ser SIM ou NAO")
+	}
 }
 
 func (h *Handler) detalhe(c fiber.Ctx) error {
