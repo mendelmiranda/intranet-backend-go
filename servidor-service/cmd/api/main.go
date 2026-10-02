@@ -10,23 +10,35 @@ import (
 
 	"github.com/gofiber/fiber/v3"
 	"tce.ap.gov.br/sistema-corporativo/servidor-service/internal/api"
+	"tce.ap.gov.br/sistema-corporativo/servidor-service/internal/config"
+	"tce.ap.gov.br/sistema-corporativo/servidor-service/internal/platform"
+	"tce.ap.gov.br/sistema-corporativo/servidor-service/internal/servidor"
 )
 
-const (
-	serviceName = "servidor-service"
-	defaultPort = "8083"
-)
+const serviceName = "servidor-service"
 
 func main() {
 	log.SetFlags(log.Ldate | log.Ltime | log.Lmicroseconds | log.LUTC)
 
-	application := api.New()
-	port := environmentOrDefault("PORT", defaultPort)
+	cfg, err := config.Load()
+	if err != nil {
+		log.Fatalf("configuração inválida: %v", err)
+	}
+
+	folha, err := platform.Open(cfg.MSSQLDSN)
+	if err != nil {
+		log.Fatalf("banco da folha (MSSQL_DSN): %v", err)
+	}
+	defer folha.Close()
+
+	application := api.New(api.Options{
+		Handler: servidor.NewHandler(servidor.NewSQLRepository(folha)),
+	})
 	listenErrors := make(chan error, 1)
 
 	go func() {
-		log.Printf("%s iniciado na porta %s", serviceName, port)
-		listenErrors <- application.Listen(":"+port, fiber.ListenConfig{
+		log.Printf("%s iniciado na porta %s", serviceName, cfg.Port)
+		listenErrors <- application.Listen(":"+cfg.Port, fiber.ListenConfig{
 			DisableStartupMessage: true,
 		})
 	}()
@@ -53,11 +65,4 @@ func main() {
 	}
 
 	log.Printf("%s encerrado", serviceName)
-}
-
-func environmentOrDefault(name, fallback string) string {
-	if value := os.Getenv(name); value != "" {
-		return value
-	}
-	return fallback
 }

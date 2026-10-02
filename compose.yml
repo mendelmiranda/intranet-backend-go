@@ -26,6 +26,8 @@ services:
       context: .
       args:
         SERVICE: servidor-service
+    env_file:
+      - .env
     environment:
       PORT: 8083
     ports:

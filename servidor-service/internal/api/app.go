@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v3"
+	"tce.ap.gov.br/sistema-corporativo/servidor-service/internal/servidor"
 	sharedstatus "tce.ap.gov.br/sistema-corporativo/shared-common/status"
 )
 
@@ -15,12 +16,16 @@ type healthResponse struct {
 
 var healthy = healthResponse{Status: "UP"}
 
+type Options struct {
+	Handler *servidor.Handler
+}
+
 // New configura a aplicação HTTP do serviço de servidores.
-func New() *fiber.App {
+func New(opts Options) *fiber.App {
 	app := fiber.New(fiber.Config{
 		AppName:      serviceName,
 		ReadTimeout:  10 * time.Second,
-		WriteTimeout: 10 * time.Second,
+		WriteTimeout: 30 * time.Second,
 		IdleTimeout:  60 * time.Second,
 		BodyLimit:    1 * 1024 * 1024,
 	})
@@ -28,6 +33,9 @@ func New() *fiber.App {
 	app.Get("/healthz", health)
 	app.Get("/actuator/health", health)
 	app.Get("/api/servidores/status", status)
+	if opts.Handler != nil {
+		opts.Handler.Register(app)
+	}
 
 	return app
 }
