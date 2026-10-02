@@ -1,0 +1,59 @@
+#:schema https://json.schemastore.org/any.json
+
+env_files = [".env"]
+root = "."
+testdata_dir = "testdata"
+tmp_dir = "tmp"
+
+[build]
+  args_bin = []
+  bin = "./tmp/usuarios-service"
+  cmd = "go build -o ./tmp/usuarios-service ./usuarios-service/cmd/api && go build -o ./tmp/ferias-service ./ferias-service/cmd/api && go build -o ./tmp/servidor-service ./servidor-service/cmd/api && go build -o ./tmp/contracheque-service ./contracheque-service/cmd/api"
+  delay = 1000
+  entrypoint = ["./scripts/air-run.sh"]
+  exclude_dir = ["assets", "tmp", "vendor", "testdata", ".runtime", ".git"]
+  exclude_file = []
+  exclude_regex = ["_test\\.go"]
+  exclude_unchanged = false
+  follow_symlink = false
+  full_bin = ""
+  ignore_dangerous_root_dir = false
+  include_dir = []
+  include_ext = ["go", "mod", "sum"]
+  include_file = [".env"]
+  kill_delay = "2s"
+  log = "build-errors.log"
+  poll = false
+  poll_interval = 0
+  post_cmd = []
+  pre_cmd = []
+  rerun = false
+  rerun_delay = 500
+  send_interrupt = true
+  stop_on_error = true
+
+[color]
+  app = ""
+  build = "yellow"
+  main = "magenta"
+  mode = ""
+  runner = "green"
+  watcher = "cyan"
+
+[log]
+  main_only = false
+  silent = false
+  time = false
+
+[misc]
+  clean_on_exit = false
+
+[proxy]
+  app_port = 0
+  app_start_timeout = 0
+  enabled = false
+  proxy_port = 0
+
+[screen]
+  clear_on_rebuild = false
+  keep_scroll = true
