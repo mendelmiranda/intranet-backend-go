@@ -17,6 +17,7 @@ bins=(
 	"$root/tmp/ferias-service"
 	"$root/tmp/servidor-service"
 	"$root/tmp/contracheque-service"
+	"$root/tmp/chefe-service"
 )
 
 pids=()

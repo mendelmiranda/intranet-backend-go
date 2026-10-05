@@ -46,3 +46,16 @@ services:
     ports:
       - "8084:8084"
     restart: unless-stopped
+
+  chefe-service:
+    build:
+      context: .
+      args:
+        SERVICE: chefe-service
+    env_file:
+      - .env
+    environment:
+      PORT: 8085
+    ports:
+      - "8085:8085"
+    restart: unless-stopped

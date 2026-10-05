@@ -72,6 +72,48 @@ func (h *Handler) Pesquisar(c fiber.Ctx) error {
 	return c.JSON(resultado)
 }
 
+// Cargos lista os cargos distintos dos vínculos ativos.
+func (h *Handler) Cargos(c fiber.Ctx) error {
+	if bearerToken(c.Get("Authorization")) == "" {
+		return problem(c, http.StatusUnauthorized, "UNAUTHORIZED", "Token ausente.")
+	}
+
+	ctx, cancel := context.WithTimeout(c.Context(), requestTimeout)
+	defer cancel()
+
+	resultado, err := h.client.Cargos(ctx, c.Query("q"))
+	if err != nil {
+		var apiErr *Error
+		if errors.As(err, &apiErr) {
+			return problem(c, apiErr.Status, apiErr.Code, apiErr.Message)
+		}
+		log.Printf("falha inesperada na consulta de cargos: %v", err)
+		return problem(c, http.StatusBadGateway, "BAD_GATEWAY", "Não foi possível consultar os cargos.")
+	}
+	return c.JSON(resultado)
+}
+
+// Servidores lista quem ocupa o cargo informado pelo código.
+func (h *Handler) Servidores(c fiber.Ctx) error {
+	if bearerToken(c.Get("Authorization")) == "" {
+		return problem(c, http.StatusUnauthorized, "UNAUTHORIZED", "Token ausente.")
+	}
+
+	ctx, cancel := context.WithTimeout(c.Context(), requestTimeout)
+	defer cancel()
+
+	resultado, err := h.client.ServidoresDoCargo(ctx, c.Query("codigo"))
+	if err != nil {
+		var apiErr *Error
+		if errors.As(err, &apiErr) {
+			return problem(c, apiErr.Status, apiErr.Code, apiErr.Message)
+		}
+		log.Printf("falha inesperada na consulta de servidores do cargo: %v", err)
+		return problem(c, http.StatusBadGateway, "BAD_GATEWAY", "Não foi possível consultar os servidores do cargo.")
+	}
+	return c.JSON(resultado)
+}
+
 func bearerToken(header string) string {
 	scheme, token, ok := strings.Cut(header, " ")
 	if !ok || !strings.EqualFold(scheme, "Bearer") {

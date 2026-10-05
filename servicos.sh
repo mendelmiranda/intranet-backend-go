@@ -7,7 +7,7 @@ RUNTIME_DIR="$PROJECT_ROOT/.runtime"
 BIN_DIR="$RUNTIME_DIR/bin"
 PID_DIR="$RUNTIME_DIR/pids"
 LOG_DIR="$RUNTIME_DIR/logs"
-SERVICES=("usuarios-service" "ferias-service" "servidor-service" "contracheque-service")
+SERVICES=("usuarios-service" "ferias-service" "servidor-service" "contracheque-service" "chefe-service")
 
 mkdir -p "$BIN_DIR" "$PID_DIR" "$LOG_DIR"
 
@@ -36,7 +36,7 @@ show_usage() {
 		"  benchmark                Executa benchmarks Go internos" \
 		"  ajuda                    Exibe esta ajuda" \
 		"" \
-		"Serviços: usuarios | ferias | servidor | contracheque"
+		"Serviços: usuarios | ferias | servidor | contracheque | chefe"
 }
 
 require_command() {
@@ -53,6 +53,7 @@ normalize_service() {
 		ferias|ferias-service) printf '%s\n' "ferias-service" ;;
 		servidor|servidor-service) printf '%s\n' "servidor-service" ;;
 		contracheque|contracheque-service) printf '%s\n' "contracheque-service" ;;
+		chefe|chefe-service) printf '%s\n' "chefe-service" ;;
 		*)
 			printf 'Erro: serviço inválido: %s\n' "${1:-não informado}" >&2
 			return 1
@@ -66,6 +67,7 @@ service_port() {
 		ferias-service) printf '%s\n' "8082" ;;
 		servidor-service) printf '%s\n' "8083" ;;
 		contracheque-service) printf '%s\n' "8084" ;;
+		chefe-service) printf '%s\n' "8085" ;;
 	esac
 }
 
@@ -261,7 +263,7 @@ show_status() {
 
 run_tests() {
 	local module
-	local modules=("shared-common" "usuarios-service" "ferias-service" "servidor-service" "contracheque-service")
+	local modules=("shared-common" "usuarios-service" "ferias-service" "servidor-service" "contracheque-service" "chefe-service")
 	for module in "${modules[@]}"; do
 		printf 'Testando %s...\n' "$module"
 		(cd "$PROJECT_ROOT/$module" && go test ./...)

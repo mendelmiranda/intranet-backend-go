@@ -8,7 +8,7 @@ tmp_dir = "tmp"
 [build]
   args_bin = []
   bin = "./tmp/usuarios-service"
-  cmd = "go build -o ./tmp/usuarios-service ./usuarios-service/cmd/api && go build -o ./tmp/ferias-service ./ferias-service/cmd/api && go build -o ./tmp/servidor-service ./servidor-service/cmd/api && go build -o ./tmp/contracheque-service ./contracheque-service/cmd/api"
+  cmd = "go build -o ./tmp/usuarios-service ./usuarios-service/cmd/api && go build -o ./tmp/ferias-service ./ferias-service/cmd/api && go build -o ./tmp/servidor-service ./servidor-service/cmd/api && go build -o ./tmp/contracheque-service ./contracheque-service/cmd/api && go build -o ./tmp/chefe-service ./chefe-service/cmd/api"
   delay = 1000
   entrypoint = ["./scripts/air-run.sh"]
   exclude_dir = ["assets", "tmp", "vendor", "testdata", ".runtime", ".git"]

@@ -6,4 +6,5 @@ use (
 	./ferias-service
 	./servidor-service
 	./contracheque-service
+	./chefe-service
 )

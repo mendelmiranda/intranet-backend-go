@@ -52,6 +52,8 @@ func New(opts Options) *fiber.App {
 	if opts.Pessoa != nil {
 		app.Get("/api/usuarios/pessoa", opts.Pessoa.Consultar)
 		app.Get("/api/usuarios/pessoas", opts.Pessoa.Pesquisar)
+		app.Get("/api/usuarios/cargos/servidores", opts.Pessoa.Servidores)
+		app.Get("/api/usuarios/cargos", opts.Pessoa.Cargos)
 	}
 
 	return app

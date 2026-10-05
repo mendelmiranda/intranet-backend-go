@@ -4,13 +4,14 @@ Conversão do projeto multi-service para Go, usando Fiber v3 sobre `fasthttp`.
 
 ## Arquitetura
 
-O repositório usa um Go Workspace (`go.work`) com cinco módulos independentes:
+O repositório usa um Go Workspace (`go.work`) com seis módulos independentes:
 
 - `shared-common`: tipos compartilhados;
 - `usuarios-service`: API na porta `8081`;
 - `ferias-service`: API na porta `8082`;
 - `servidor-service`: API na porta `8083`;
-- `contracheque-service`: API na porta `8084` (módulo de contracheque do S3i).
+- `contracheque-service`: API na porta `8084` (módulo de contracheque do S3i);
+- `chefe-service`: API na porta `8085` (módulo de chefe do S3i).
 
 Cada serviço produz um binário próprio e pode ser iniciado, parado e publicado separadamente.
 
@@ -91,6 +92,28 @@ CACHE_TTL_MINUTES=5
 TIMEZONE=America/Belem
 ```
 
+## Chefe (`chefe-service`)
+
+Reimplementa em Go o módulo `chefe` do Spring (tabela `chefe_funcionarios`, MySQL `CHEFE_MYSQL_DSN`, com fallback para `MYSQL_DSN`; checagem de
+servidor efetivo na folha, `MSSQL_DSN`). Todas as rotas exigem JWT com `ROLE_DASHBOARD` ou `ROLE_RH_AVISO_FERIAS`.
+
+| Método | Rota | Descrição |
+|---|---|---|
+| GET | `/api/chefe` | todos os vínculos |
+| GET | `/api/chefe/{id}` | vínculo por id (`null` se não existir) |
+| GET | `/api/chefe/cpf/{cpf}` | servidores do chefe, ordenados por nome |
+| GET | `/api/chefe/cpf-chefe/{cpf}` | servidores do chefe (férias) |
+| GET | `/api/chefe/cpf-chefe/{cpf}/avaliacao` e `/avaliacao/menu` | só efetivos, sem `excecao_servidores` |
+| GET | `/api/chefe/cpf-chefe/{cpf}/avaliacao/pares` | idem, sem servidores que também são chefes |
+| GET | `/api/chefe/cpf-funcionario/{cpf}` | chefe do servidor (`null` se não houver) |
+| GET | `/api/chefe/efetivo/cpf/{cpf}` | `true`/`false` |
+| GET | `/api/chefe/lotacao/{codLotacao}` | vínculos da lotação |
+| POST | `/api/chefe` | cadastra vínculo (201 + `Location`) |
+| PUT | `/api/chefe` | troca o chefe (`cpfChefeAntigo`, `cpfChefeNovo`, `nomeChefeNovo`); 404 se o antigo não existe |
+| DELETE | `/api/chefe/remover-servidor/{cpfChefe}/{cpfFuncionario}` | remove vínculo (204) |
+
+POST e PUT gravam auditoria em `tab_log` (best-effort: falha no log não bloqueia a operação).
+
 ## Atalhos com Make
 
 ```bash
@@ -125,6 +148,7 @@ GET http://localhost:8081/api/usuarios/status
 GET http://localhost:8082/api/ferias/status
 GET http://localhost:8083/api/servidores/status
 GET http://localhost:8084/api/contracheque/status
+GET http://localhost:8085/api/chefes/status
 ```
 
 Todos os serviços também expõem:
