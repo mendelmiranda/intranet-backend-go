@@ -10,18 +10,29 @@ import (
 
 	"github.com/gofiber/fiber/v3"
 	"tce.ap.gov.br/sistema-corporativo/usuarios-service/internal/api"
+	"tce.ap.gov.br/sistema-corporativo/usuarios-service/internal/auth"
+	"tce.ap.gov.br/sistema-corporativo/usuarios-service/internal/config"
+	"tce.ap.gov.br/sistema-corporativo/usuarios-service/internal/pessoa"
 )
 
-const (
-	serviceName = "usuarios-service"
-	defaultPort = "8081"
-)
+const serviceName = "usuarios-service"
 
 func main() {
 	log.SetFlags(log.Ldate | log.Ltime | log.Lmicroseconds | log.LUTC)
 
-	application := api.New()
-	port := environmentOrDefault("PORT", defaultPort)
+	cfg, err := config.Load()
+	if err != nil {
+		log.Fatalf("configuração inválida: %v", err)
+	}
+
+	keycloak := auth.NewKeycloak(cfg.Keycloak.Issuer, cfg.Keycloak.ClientID, cfg.Keycloak.ClientSecret, cfg.Keycloak.RedirectURI)
+	application := api.New(api.Options{
+		Auth:           auth.NewHandler(keycloak),
+		Pessoa:         pessoa.NewHandler(pessoa.NewClient(cfg.GraphQLURL, keycloak)),
+		AllowedOrigins: cfg.AllowedOrigins,
+	})
+
+	port := cfg.Port
 	listenErrors := make(chan error, 1)
 
 	go func() {
@@ -53,11 +64,4 @@ func main() {
 	}
 
 	log.Printf("%s encerrado", serviceName)
-}
-
-func environmentOrDefault(name, fallback string) string {
-	if value := os.Getenv(name); value != "" {
-		return value
-	}
-	return fallback
 }
