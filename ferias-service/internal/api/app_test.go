@@ -12,7 +12,7 @@ import (
 func TestStatusEndpoint(t *testing.T) {
 	t.Parallel()
 
-	app := New()
+	app := New(Options{})
 	request := httptest.NewRequest(http.MethodGet, "/api/ferias/status", nil)
 	response, err := app.Test(request)
 	if err != nil {
@@ -34,7 +34,7 @@ func TestStatusEndpoint(t *testing.T) {
 }
 
 func BenchmarkStatusEndpoint(b *testing.B) {
-	app := New()
+	app := New(Options{})
 	b.ReportAllocs()
 
 	for i := 0; i < b.N; i++ {

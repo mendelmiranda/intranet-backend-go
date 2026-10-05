@@ -10,23 +10,48 @@ import (
 
 	"github.com/gofiber/fiber/v3"
 	"tce.ap.gov.br/sistema-corporativo/ferias-service/internal/api"
+	"tce.ap.gov.br/sistema-corporativo/ferias-service/internal/config"
+	"tce.ap.gov.br/sistema-corporativo/ferias-service/internal/ferias"
+	"tce.ap.gov.br/sistema-corporativo/ferias-service/internal/platform"
 )
 
-const (
-	serviceName = "ferias-service"
-	defaultPort = "8082"
-)
+const serviceName = "ferias-service"
 
 func main() {
 	log.SetFlags(log.Ldate | log.Ltime | log.Lmicroseconds | log.LUTC)
 
-	application := api.New()
-	port := environmentOrDefault("PORT", defaultPort)
+	cfg, err := config.Load()
+	if err != nil {
+		log.Fatalf("configuração inválida: %v", err)
+	}
+
+	intranet, err := platform.Open("mysql", cfg.MySQLDSN)
+	if err != nil {
+		log.Fatalf("banco internet_novo (FERIAS_MYSQL_DSN): %v", err)
+	}
+	defer intranet.Close()
+
+	folha, err := platform.Open("sqlserver", cfg.MSSQLDSN)
+	if err != nil {
+		log.Fatalf("banco da folha (MSSQL_DSN): %v", err)
+	}
+	defer folha.Close()
+
+	service := ferias.NewService(ferias.NewSQLRepository(intranet), ferias.NewSQLFolha(folha))
+	if cfg.DocumentosDir != "" {
+		service.ComArmazenamento(ferias.ArmazenamentoFS{Dir: cfg.DocumentosDir})
+	} else {
+		log.Printf("FERIAS_DOCUMENTOS_DIR não informada: comprovantes não serão gravados em disco")
+	}
+	application := api.New(api.Options{
+		Handler:        ferias.NewHandler(service, cfg.JWTSigningKey),
+		AllowedOrigins: cfg.AllowedOrigins,
+	})
 	listenErrors := make(chan error, 1)
 
 	go func() {
-		log.Printf("%s iniciado na porta %s", serviceName, port)
-		listenErrors <- application.Listen(":"+port, fiber.ListenConfig{
+		log.Printf("%s iniciado na porta %s", serviceName, cfg.Port)
+		listenErrors <- application.Listen(":"+cfg.Port, fiber.ListenConfig{
 			DisableStartupMessage: true,
 		})
 	}()
@@ -53,11 +78,4 @@ func main() {
 	}
 
 	log.Printf("%s encerrado", serviceName)
-}
-
-func environmentOrDefault(name, fallback string) string {
-	if value := os.Getenv(name); value != "" {
-		return value
-	}
-	return fallback
 }

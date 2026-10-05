@@ -92,6 +92,50 @@ CACHE_TTL_MINUTES=5
 TIMEZONE=America/Belem
 ```
 
+## Férias (`ferias-service`)
+
+Reimplementa em Go o módulo `ferias` do Spring (MySQL `FERIAS_MYSQL_DSN`, com fallback para `MYSQL_DSN`; cadastro de
+servidores na folha, `MSSQL_DSN`). Roles seguem o `WebSecurityConfig` (JWT `ROLE_*`).
+
+| Método | Rota | Roles | Descrição |
+|---|---|---|---|
+| GET | `/api/programacao/{ano}/{cpf}` | RH, DASHBOARD, DASHBOARD_NORMAL | períodos do ano; `ano=0` próxima programação; `ano=1` todas |
+| GET | `/api/programacao/{cpf}` | idem | períodos anteriores (400 se vazio) |
+| GET | `/api/programacao/ano/{ano}` | idem | programações do ano (até 150) |
+| GET | `/api/programacao/chefe/cpf-chefe/{cpf}/ano/{ano}/servidores` | idem | servidores do chefe com programação |
+| POST | `/api/programacao` | idem | cria/edita (regras de dias; RH e membros pulam as regras) |
+| PUT | `/api/programacao/atualizar` | idem | mesmo `save` do POST |
+| PUT | `/api/programacao/atualizar-autorizacao` | idem | só grava antes do início do período |
+| DELETE | `/api/programacao/remover/{id}` | idem | guarda no histórico; 1º período: ≥ 50 dias e não pago |
+| POST | `/api/programacao/consulta` | idem | pesquisa do RH |
+| POST | `/api/programacao/restantes` | RH | servidores ativos sem programação |
+| POST | `/api/programacao/bloquear` e `/desbloquear` | RH | marca `atualizada` 1/0 |
+| PUT | `/api/programacao/atualizar-pagamento` | RH | grava a programação (desfazer pagamento) |
+| PUT | `/api/pagamento/programacao/gerar-comprovante/{id}` | RH | marca férias como pagas |
+| POST | `/api/consulta/ferias/pdf` | RH | relatório PDF da consulta |
+| GET | `/api/programacao/chart/ano/{ano}/mes/{mes}/periodo/{p}` | RH | programações do mês/período |
+| GET | `/api/programacao-ferias/chart/{ano}` | autenticado | quantidade por mês |
+| GET | `/api/programacao-historico/{cpf}` | autenticado | histórico de exclusões/alterações |
+| GET/POST/DELETE | `/api/programacao-observacao...` | RH | observações; o POST volta a programação para "não paga" |
+| GET/POST/PUT | `/api/alteracao-ferias...` | RH | alterações de período |
+| GET | `/periodo-aquisitivo/all`, `/periodo-aquisitivo/{ano}` | DASHBOARD, RH | períodos aquisitivos (também sob `/api`) |
+| PUT | `/periodo-aquisitivo/update` e `/api/periodo-aquisitivo/update` | RH | grava prazos do período |
+
+Regras de dias (servidor comum): 1º período de 1 a 30 dias; 2º de 10 a 20; total do ano ≤ 30; o 1º não pode
+começar depois do 2º. Erros de regra respondem 400 com `{httpStatusCode, httpStatus, reason, message}`.
+
+### Comprovantes em PDF
+
+Três documentos A4 com logo do Tribunal, identificação do servidor, tabela de períodos e código de controle
+(SHA-256 do conteúdo, estável entre emissões): **aviso de férias** (ao registrar o pagamento), **aviso de alteração
+de período** e **informação de reversão de pagamento** (ambos pelo `POST /api/programacao-observacao`).
+No pagamento e nas observações o PDF é gravado em `{FERIAS_DOCUMENTOS_DIR}/{cpf}/{arquivo}` (mesma estrutura do
+`pathupload.documentos` do Spring) e registrado em `aviso_ferias`, aparecendo na área de documentos do servidor.
+Sem `FERIAS_DOCUMENTOS_DIR` nada é gravado em disco. `GET /api/programacao/comprovante/{id}` (RH) gera o aviso
+na hora, sem gravar.
+
+Não portado: o envio do comprovante por e-mail ao servidor.
+
 ## Chefe (`chefe-service`)
 
 Reimplementa em Go o módulo `chefe` do Spring (tabela `chefe_funcionarios`, MySQL `CHEFE_MYSQL_DSN`, com fallback para `MYSQL_DSN`; checagem de
